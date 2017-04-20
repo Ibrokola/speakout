@@ -1,7 +1,13 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import render, get_object_or_404
-from django.views.generic import DetailView, ListView, CreateView, UpdateView
-
+from django.views.generic import (
+								CreateView,
+								DetailView, 
+								DeleteView,
+								ListView,
+								UpdateView
+								)
+from django.urls import reverse_lazy
 from .forms import ConvoModelForm
 from .mixins import FormUserNeededMixin, UserOwnerMixin
 from .models import Convo
@@ -22,7 +28,10 @@ class ConvoUpdateView(LoginRequiredMixin, UserOwnerMixin, UpdateView):
 	template_name = 'convo/update_view.html'
 	success_url = "/convo/"
 
-
+class ConvoDeleteView(LoginRequiredMixin, DeleteView):
+	model = Convo
+	template_name = 'convo/delete_confirm.html'
+	success_url = reverse_lazy('home')
 
 # Delete
 
