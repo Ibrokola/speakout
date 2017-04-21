@@ -66,6 +66,8 @@ class ConvoListView(ListView):
 
 	def get_context_data(self, *args, **kwargs):
 		context = super(ConvoListView, self).get_context_data(*args, **kwargs)
+		context['create_form'] = ConvoModelForm()
+		context['create_url'] = reverse_lazy("convo:create")
 		
 		# context["another_list"] = Convo.objects.all()
 		return(context)

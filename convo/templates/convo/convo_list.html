@@ -1,9 +1,17 @@
 {% extends "base.html" %}
 
 {% block content %}
-	<br>
 	<div class="row">
-		<div class="col-sm-8 col-offset-2">
+		<div class="col-sm-3 col-xs-12" style="background-color:blue;">
+		<h1>{{ request.user }}</h1>
+		</div>
+		<div class="col-sm-9">
+		{% if not request.GET.q %}
+			<div class="">
+				{% include "convo/form.html" with form=create_form action_url=create_url btn_title='Converse' %}
+			</div>
+		{% endif %}
+		<hr>
 	{% for obj in object_list %}
 		<div class="media">
 		  <div class="media-left">
@@ -25,7 +33,7 @@
 				{% else %}
 				<p>No convos yet.</p>
 				{% endif %}
-			{% endfor %}
+	{% endfor %}
 		</div>	
 	</div>
 
