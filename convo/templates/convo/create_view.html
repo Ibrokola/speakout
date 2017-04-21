@@ -1,1 +1,9 @@
-{% include "convo/form.html" with form=form btn_value='Converse' %}
+{% extends "base.html" %}
+
+{% block title %}Start a Convo | {{ block.super }} {% endblock title %}
+
+{% block content %}
+
+	{% include "convo/form.html" with form=form btn_value='Converse' %}
+
+{% endblock content %}

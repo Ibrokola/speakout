@@ -9,7 +9,7 @@ from .views import home
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r'^$', home, name='home'),
-    url(r'^convo/', include('convo.urls')),
+    url(r'^convo/', include('convo.urls', namespace='convo')),
 ]
 
 if settings.DEBUG:

@@ -1,4 +1,5 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db.models import Q
 from django.shortcuts import render, get_object_or_404
 from django.views.generic import (
 								CreateView,
@@ -7,7 +8,7 @@ from django.views.generic import (
 								ListView,
 								UpdateView
 								)
-from django.urls import reverse_lazy
+from django.urls import reverse_lazy, reverse 
 from .forms import ConvoModelForm
 from .mixins import FormUserNeededMixin, UserOwnerMixin
 from .models import Convo
@@ -18,20 +19,20 @@ from .models import Convo
 class ConvoCreateView(FormUserNeededMixin, CreateView):
 	form_class = ConvoModelForm
 	template_name = 'convo/create_view.html'
-	success_url = "/convo/create/"
+	# success_url = reverse_lazy("convo:detail")
 	# login_url = '/admin/'
 
 # Update
 class ConvoUpdateView(LoginRequiredMixin, UserOwnerMixin, UpdateView):
-	form_class = ConvoModelForm
 	queryset = Convo.objects.all()
+	form_class = ConvoModelForm
 	template_name = 'convo/update_view.html'
-	success_url = "/convo/"
+	# success_url = "/convo/"
 
 class ConvoDeleteView(LoginRequiredMixin, DeleteView):
 	model = Convo
 	template_name = 'convo/delete_confirm.html'
-	success_url = reverse_lazy('home')
+	success_url = reverse_lazy('convo:list') #/convo/
 
 # Delete
 
@@ -50,14 +51,23 @@ class ConvoDetailView(DetailView):
 
 class ConvoListView(ListView):
 	# template_name = "list_view.html"
-	queryset = Convo.objects.all()
+	# queryset = Convo.objects.all()
+
+	def get_queryset(self, *args, **kwargs):
+		qs = Convo.objects.all()
+		print(self.request.GET)
+		query = self.request.GET.get("q", None)
+		if query is not None:
+			qs = qs.filter(
+					Q(content__icontains=query) |
+					Q(user__username__icontains=query)
+					)
+		return qs
 
 	def get_context_data(self, *args, **kwargs):
 		context = super(ConvoListView, self).get_context_data(*args, **kwargs)
 		
-		context["another_list"] = Convo.objects.all()
-		
-		print(context)
+		# context["another_list"] = Convo.objects.all()
 		return(context)
 
 

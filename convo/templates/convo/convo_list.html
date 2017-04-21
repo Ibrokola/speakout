@@ -1,5 +1,32 @@
-{% for obj in object_list %}
-	<p>{{ obj.user }} <br>
-	{{ obj.content }} <br>
-	{{ obj.timestamp | timesince}} ago</p><br><br>
-{% endfor %}
+{% extends "base.html" %}
+
+{% block content %}
+	<br>
+	<div class="row">
+		<div class="col-sm-8 col-offset-2">
+	{% for obj in object_list %}
+		<div class="media">
+		  <div class="media-left">
+		    <a href="#">
+		    {% if obj.image %}
+		      <img class="media-object" src="..." alt="...">
+		    {% endif %}
+		    </a>
+		  </div>
+		  <div class="media-body">
+		  	{{ obj.content }}<br>
+		  	by {{ obj.user }} | {{ obj.timestamp|timesince }} ago | <a href='{{ obj.get_absolute_url }}'>View</a>
+		  </div>
+		</div>
+		<hr>
+			{% empty %}
+				{% if request.GET.q %}
+				<p>No convos found.</p>
+				{% else %}
+				<p>No convos yet.</p>
+				{% endif %}
+			{% endfor %}
+		</div>	
+	</div>
+
+{% endblock content %}
