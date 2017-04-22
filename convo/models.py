@@ -20,6 +20,9 @@ class Convo(models.Model):
 	def get_absolute_url(self):
 		return reverse("convo:detail", kwargs={"pk":self.pk})
 
+	class Meta:
+		ordering = ['-timestamp']
+
 	# def clean(self, *args, **kwargs):
 	# 	content = self.content
 	# 	if content == "abc":

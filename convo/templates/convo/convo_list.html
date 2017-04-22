@@ -1,6 +1,160 @@
 {% extends "base.html" %}
 
+{% block script %}
+
+		
+
+<script>
+
+function getParameterByName(name, url) {
+    if (!url) url = window.location.href;
+    name = name.replace(/[\[\]]/g, "\\$&");
+    var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
+        results = regex.exec(url);
+    if (!results) return null;
+    if (!results[2]) return '';
+    return decodeURIComponent(results[2].replace(/\+/g, " "));
+}
+
+$(document).ready(function(){
+
+	var query = getParameterByName('q')
+	var convoList = [];
+	var nextConvoUrl;
+
+	function attachConvo(convoValue, prepend){
+			var dateDisplay = convoValue.date_display
+			var convoContent = convoValue.content;
+			var convoUser = convoValue.user;
+			var convoFormattedHtml = "<div class='media'><div class='media-body'>" + convoContent + "<br> by <a href='" + convoUser.url + "'>" + convoUser.username + "</a> | " + dateDisplay + " | " +"<a href='#'>View</a>" + "</div></div><hr>"
+			if (prepend==true){
+			$("#convo-container").prepend(
+				convoFormattedHtml
+			)
+			} else {
+			$("#convo-container").append(
+				convoFormattedHtml
+			)
+		}
+	}
+
+	function parseConvo(){
+		if (convoList == 0){
+			$("#convo-container").text("No convos currently found.")
+		} else {
+			// convo exists parse them
+		$.each(convoList, function(key, value){
+				var convoKey = key;
+				attachConvo(value)
+			})
+		}
+	}
+
+	function fetchConvo(url){
+	console.log("fetching..")
+	var fetchUrl;
+	if(!url) {
+		fetchUrl = "/api/convo/"
+	} else {
+		fetchUrl = url
+	}
+	$.ajax({
+		url: "/api/convo/",
+		data: {
+			"q": query
+		},
+		method: "GET",
+		success: function(data){
+			convoList = data.results
+			if (data.next){
+				nextConvoUrl = data.next
+			} else {
+				$("#loadmore").css("display", "none")
+			}
+			parseConvo()
+			
+		},
+		error: function(data){
+			console.log("error")
+			console.log(data)
+		}
+	})
+	}
+
+fetchConvo()
+
+$("#loadmore").click(function(event){
+	event.preventDefault()
+	if (nextConvoUrl){
+		fetchConvo(nextConvoUrl)
+	}
+	// load more items
+})
+
+	var charsStart = 200;
+	var charsCurrent = 0;
+
+	$("#convo-form").append("<span id='convoCharsLeft'>" + charsStart + "</span>")
+
+	$("#convo-form textarea").keyup(function(event){
+		// console.log(event.key, event.timeStamp)
+		var convoValue = $(this).val()
+		charsCurrent = charsStart - convoValue.length
+		var spanChars = $("#convoCharsLeft")
+		spanChars.text(charsCurrent)
+
+		if (charsCurrent > 0){
+			// remove classes
+			spanChars.removeClass("grey-color")
+			spanChars.removeClass("red-color")
+		} else if (charsCurrent == 0){
+			// add gray class
+			spanChars.removeClass("grey-color")
+			spanChars.addClass("grey-color")
+		} else if (charsCurrent < 0){
+			// add red class
+			spanChars.removeClass("grey-color")
+			spanChars.addClass("red-color")
+		}
+	})
+
+
+	$("#convo-form").submit(function(event){
+	   	event.preventDefault()
+	   	var this_ = $(this)
+		var formData = this_.serialize()
+		if (charsCurrent >= 0) {
+
+		$.ajax({
+			url: "/api/convo/create/",
+			data: formData,
+			method: "POST",
+			success: function(data){
+				this_.find("input[type=text], textarea").val("")
+				attachConvo(data, true)
+				
+			},
+			error: function(data){
+				console.log("error")
+				console.log(data.statusText)
+				console.log(data.status)
+			}
+		})
+		} else {
+			console.log("Cannot send, too much info...")
+			$("#convo-container").text("Cannot send, too much info...")
+		}
+	})
+
+});
+
+</script>
+
+{% endblock script %}
+
+
 {% block content %}
+
 	<div class="row">
 		<div class="col-sm-3 col-xs-12" style="background-color:blue;">
 		<h1>{{ request.user }}</h1>
@@ -8,32 +162,16 @@
 		<div class="col-sm-9">
 		{% if not request.GET.q %}
 			<div class="">
-				{% include "convo/form.html" with form=create_form action_url=create_url btn_title='Converse' %}
+				{% include "convo/form.html" with form=create_form action_url=create_url btn_title='Converse' form_id='convo-form' %}
 			</div>
 		{% endif %}
 		<hr>
-	{% for obj in object_list %}
-		<div class="media">
-		  <div class="media-left">
-		    <a href="#">
-		    {% if obj.image %}
-		      <img class="media-object" src="..." alt="...">
-		    {% endif %}
-		    </a>
-		  </div>
-		  <div class="media-body">
-		  	{{ obj.content }}<br>
-		  	by {{ obj.user }} | {{ obj.timestamp|timesince }} ago | <a href='{{ obj.get_absolute_url }}'>View</a>
-		  </div>
+
+		<div id="convo-container">
+	
 		</div>
-		<hr>
-			{% empty %}
-				{% if request.GET.q %}
-				<p>No convos found.</p>
-				{% else %}
-				<p>No convos yet.</p>
-				{% endif %}
-	{% endfor %}
+		<a href="#" id="loadmore">Load More Convos Here</a>
+
 		</div>	
 	</div>
 
