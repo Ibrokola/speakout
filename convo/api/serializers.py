@@ -6,23 +6,51 @@ from accounts.api.serializers import UserDisplaySerializer
 from convo.models import Convo
 
 
-class ConvoModelSerializer(serializers.ModelSerializer):
+
+class ParentConvoModelSerializer(serializers.ModelSerializer):
 	user = UserDisplaySerializer(read_only=True)
 	date_display = serializers.SerializerMethodField()
 	timesince = serializers.SerializerMethodField()
+	
 	class Meta:
 		model = Convo
 		fields = [
+			'id',
 			'user',
 			'content',
 			'timestamp',
 			'date_display',
 			'timesince',
-
 		]
 
 	def get_date_display(self, obj):
-		return obj.timestamp.strftime("%b %d, %Y | %I:%M %p")
+		return obj.timestamp.strftime("%b %d, %Y at %I:%M %p")
+
+	def get_timesince(self, obj):
+		return timesince(obj.timestamp) + " ago"
+
+
+
+class ConvoModelSerializer(serializers.ModelSerializer):
+	user = UserDisplaySerializer(read_only=True)
+	date_display = serializers.SerializerMethodField()
+	timesince = serializers.SerializerMethodField()
+	parent = ParentConvoModelSerializer(read_only=True)
+
+	class Meta:
+		model = Convo
+		fields = [
+			'id',
+			'user',
+			'content',
+			'timestamp',
+			'date_display',
+			'timesince',
+			'parent',
+		]
+
+	def get_date_display(self, obj):
+		return obj.timestamp.strftime("%b %d, %Y at %I:%M %p")
 
 	def get_timesince(self, obj):
 		return timesince(obj.timestamp) + " ago"

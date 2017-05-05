@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+
+{% block content %}
+
+
+	<div class="row">
+		<div class="col-sm-3 col-xs-12" style="background-color:blue;">
+		<h1>{{ obj.tag }}</h1>
+		</div>
+		<div class="col-sm-9">
+		
+			{% for convo in obj.get_convo %}
+				{{ convo.content }} <br/>
+			{% endfor %}
+
+		</div>	
+	</div>
+
+{% endblock content %}

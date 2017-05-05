@@ -22,11 +22,54 @@ $(document).ready(function(){
 	var convoList = [];
 	var nextConvoUrl;
 
-	function attachConvo(convoValue, prepend){
+	$(document.body).on("click", ".reconvBtn", function(e){
+		e.preventDefault()
+		console.log("clicked")
+		var url = "/api" + $(this).attr("href")
+
+		$.ajax({
+			method: "GET",
+			url: url,
+			success: function (data){
+				console.log(data)
+				attachConvo(data, true, true)
+				updateHashLinks()
+			},
+			error: function(data) {
+				console.log("error")
+				console.log(data)
+			}
+		})
+	})
+
+	function updateHashLinks(){
+		$(".media-body").each(function(data){
+			var hashtagRegex = /(^|\s)#([\w\d-]+)/g
+			var usernameRegex = /(^|\s)@([\w\d-]+)/g 
+			var currentHtml = $(this).html()
+			var newText;
+			newText = currentHtml.replace(hashtagRegex, "$1<a href='/tags/$2/'>#$2</a>")
+			newText = newText.replace(usernameRegex, "$1 @<a href='/$2/'>$2</a>")
+			$(this).html(newText)
+			// create hashtag
+		})
+	}
+
+	function attachConvo(convoValue, prepend, reconv){
 			var dateDisplay = convoValue.date_display
 			var convoContent = convoValue.content;
 			var convoUser = convoValue.user;
-			var convoFormattedHtml = "<div class='media'><div class='media-body'>" + convoContent + "<br> by <a href='" + convoUser.url + "'>" + convoUser.username + "</a> | " + dateDisplay + " | " +"<a href='#'>View</a>" + "</div></div><hr>"
+			var convoFormattedHtml;
+			if (reconv && convoValue.parent){
+				// reconv
+				var mainConvo = convoValue.parent
+				convoFormattedHtml = "<div class='media'><div class='media-body'><span class='grey-color'>Reconv by " + convoUser.username + " on " + dateDisplay + "</span><br/>" + mainConvo.content + "<br/> by <a href='" + mainConvo.user.url + "'>" + mainConvo.user.username + "</a> | " + mainConvo.date_display + " | " +"<a href='/convo/" + mainConvo.id + "'>View</a> | " + "<a class='reconvBtn' href='/convo/" + convoValue.id + "/reconv/'>Reconv</a>" + "</div></div><hr>"
+
+			} else {
+				// fresh convo
+				 convoFormattedHtml = "<div class='media'><div class='media-body'>" + convoContent + "<br> by <a href='" + convoUser.url + "'>" + convoUser.username + "</a> | " + dateDisplay + " | " +"<a href='/convo/" + convoValue.id + "'>View</a> | " + "<a class='reconvBtn' href='/convo/" + convoValue.id + "/reconv/'>Reconv</a>" + "</div></div><hr>"		
+			}
+			
 			if (prepend==true){
 			$("#convo-container").prepend(
 				convoFormattedHtml
@@ -45,7 +88,11 @@ $(document).ready(function(){
 			// convo exists parse them
 		$.each(convoList, function(key, value){
 				var convoKey = key;
-				attachConvo(value)
+				if (value.parent) {
+					attachConvo(value, false, true)
+				} else {
+					attachConvo(value)
+				}
 			})
 		}
 	}
@@ -72,6 +119,7 @@ $(document).ready(function(){
 				$("#loadmore").css("display", "none")
 			}
 			parseConvo()
+			updateHashLinks()
 			
 		},
 		error: function(data){
@@ -132,6 +180,7 @@ $("#loadmore").click(function(event){
 			success: function(data){
 				this_.find("input[type=text], textarea").val("")
 				attachConvo(data, true)
+				updateHashLinks()
 				
 			},
 			error: function(data){
@@ -164,8 +213,8 @@ $("#loadmore").click(function(event){
 			<div class="">
 				{% include "convo/form.html" with form=create_form action_url=create_url btn_title='Converse' form_id='convo-form' %}
 			</div>
-		{% endif %}
 		<hr>
+		{% endif %}
 
 		<div id="convo-container">
 	

@@ -1,6 +1,8 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
+from django.http import HttpResponseRedirect
+from django.views import View 
 from django.views.generic import (
 								CreateView,
 								DetailView, 
@@ -15,6 +17,15 @@ from .models import Convo
 
 
 # Create
+
+class ReConvView(View):
+	def get(self, request, pk, *args, **kwargs):
+		convo = get_object_or_404(Convo, pk=pk)
+		if request.user.is_authenticated():
+			new_convo = Convo.objects.reconv(request.user, convo)
+			return HttpResponseRedirect("/")
+		return HttpResponseRedirect(convo.get_absolute_url())
+
 
 class ConvoCreateView(FormUserNeededMixin, CreateView):
 	form_class = ConvoModelForm
