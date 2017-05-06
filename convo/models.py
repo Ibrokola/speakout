@@ -21,7 +21,8 @@ class ConvoManager(models.Manager):
 			og_parent = parent_obj
 
 		qs = self.get_queryset().filter(
-			user=user, parent=og_parent
+			user=user, parent=og_parent,
+			reply=False,
 			)
 
 		# qs = self.get_queryset().filter(
@@ -44,10 +45,24 @@ class ConvoManager(models.Manager):
 	
 		return obj 
 
+	def like_toggle(self, user, convo_obj):
+		if user in convo_obj.liked.all():
+			is_liked = False
+			convo_obj.liked.remove(user)
+		else:
+			is_liked = True
+			convo_obj.liked.add(user)
+		return is_liked
+
+
+
+
 class Convo(models.Model):
 	parent 		= models.ForeignKey("self", blank=True, null=True)
 	user 		= models.ForeignKey(settings.AUTH_USER_MODEL)
 	content 	= models.CharField(max_length=200, validators=[validate_content])
+	liked 		= models.ManyToManyField(settings.AUTH_USER_MODEL, blank=True, related_name='liked')
+	reply 		= models.BooleanField(verbose_name='Is a reply?', default=False)
 	updated 	= models.DateTimeField(auto_now=True)
 	timestamp 	= models.DateTimeField(auto_now_add=True)
 
@@ -61,6 +76,18 @@ class Convo(models.Model):
 
 	class Meta:
 		ordering = ['-timestamp']
+
+	def get_parent(self):
+		the_parent = self
+		if self.parent:
+			the_parent = self.parent
+		return the_parent
+
+	def get_children(self):
+		parent = self.get_parent()
+		qs = Convo.objects.filter(parent=parent)
+		qs_parent = Convo.objects.filter(pk=parent.pk)
+		return (qs | qs_parent)
 
 	# def clean(self, *args, **kwargs):
 	# 	content = self.content

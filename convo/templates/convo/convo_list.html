@@ -1,202 +1,19 @@
 {% extends "base.html" %}
+{% load recommended %}
+
+<style>
+#convo-container {
+
+}
+</style>
 
 {% block script %}
 
-		
-
 <script>
 
-function getParameterByName(name, url) {
-    if (!url) url = window.location.href;
-    name = name.replace(/[\[\]]/g, "\\$&");
-    var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
-        results = regex.exec(url);
-    if (!results) return null;
-    if (!results[2]) return '';
-    return decodeURIComponent(results[2].replace(/\+/g, " "));
-}
-
 $(document).ready(function(){
-
-	var query = getParameterByName('q')
-	var convoList = [];
-	var nextConvoUrl;
-
-	$(document.body).on("click", ".reconvBtn", function(e){
-		e.preventDefault()
-		console.log("clicked")
-		var url = "/api" + $(this).attr("href")
-
-		$.ajax({
-			method: "GET",
-			url: url,
-			success: function (data){
-				console.log(data)
-				attachConvo(data, true, true)
-				updateHashLinks()
-			},
-			error: function(data) {
-				console.log("error")
-				console.log(data)
-			}
-		})
-	})
-
-	function updateHashLinks(){
-		$(".media-body").each(function(data){
-			var hashtagRegex = /(^|\s)#([\w\d-]+)/g
-			var usernameRegex = /(^|\s)@([\w\d-]+)/g 
-			var currentHtml = $(this).html()
-			var newText;
-			newText = currentHtml.replace(hashtagRegex, "$1<a href='/tags/$2/'>#$2</a>")
-			newText = newText.replace(usernameRegex, "$1 @<a href='/$2/'>$2</a>")
-			$(this).html(newText)
-			// create hashtag
-		})
-	}
-
-	function attachConvo(convoValue, prepend, reconv){
-			var dateDisplay = convoValue.date_display
-			var convoContent = convoValue.content;
-			var convoUser = convoValue.user;
-			var convoFormattedHtml;
-			if (reconv && convoValue.parent){
-				// reconv
-				var mainConvo = convoValue.parent
-				convoFormattedHtml = "<div class='media'><div class='media-body'><span class='grey-color'>Reconv by " + convoUser.username + " on " + dateDisplay + "</span><br/>" + mainConvo.content + "<br/> by <a href='" + mainConvo.user.url + "'>" + mainConvo.user.username + "</a> | " + mainConvo.date_display + " | " +"<a href='/convo/" + mainConvo.id + "'>View</a> | " + "<a class='reconvBtn' href='/convo/" + convoValue.id + "/reconv/'>Reconv</a>" + "</div></div><hr>"
-
-			} else {
-				// fresh convo
-				 convoFormattedHtml = "<div class='media'><div class='media-body'>" + convoContent + "<br> by <a href='" + convoUser.url + "'>" + convoUser.username + "</a> | " + dateDisplay + " | " +"<a href='/convo/" + convoValue.id + "'>View</a> | " + "<a class='reconvBtn' href='/convo/" + convoValue.id + "/reconv/'>Reconv</a>" + "</div></div><hr>"		
-			}
-			
-			if (prepend==true){
-			$("#convo-container").prepend(
-				convoFormattedHtml
-			)
-			} else {
-			$("#convo-container").append(
-				convoFormattedHtml
-			)
-		}
-	}
-
-	function parseConvo(){
-		if (convoList == 0){
-			$("#convo-container").text("No convos currently found.")
-		} else {
-			// convo exists parse them
-		$.each(convoList, function(key, value){
-				var convoKey = key;
-				if (value.parent) {
-					attachConvo(value, false, true)
-				} else {
-					attachConvo(value)
-				}
-			})
-		}
-	}
-
-	function fetchConvo(url){
-	console.log("fetching..")
-	var fetchUrl;
-	if(!url) {
-		fetchUrl = "/api/convo/"
-	} else {
-		fetchUrl = url
-	}
-	$.ajax({
-		url: "/api/convo/",
-		data: {
-			"q": query
-		},
-		method: "GET",
-		success: function(data){
-			convoList = data.results
-			if (data.next){
-				nextConvoUrl = data.next
-			} else {
-				$("#loadmore").css("display", "none")
-			}
-			parseConvo()
-			updateHashLinks()
-			
-		},
-		error: function(data){
-			console.log("error")
-			console.log(data)
-		}
-	})
-	}
-
-fetchConvo()
-
-$("#loadmore").click(function(event){
-	event.preventDefault()
-	if (nextConvoUrl){
-		fetchConvo(nextConvoUrl)
-	}
-	// load more items
-})
-
-	var charsStart = 200;
-	var charsCurrent = 0;
-
-	$("#convo-form").append("<span id='convoCharsLeft'>" + charsStart + "</span>")
-
-	$("#convo-form textarea").keyup(function(event){
-		// console.log(event.key, event.timeStamp)
-		var convoValue = $(this).val()
-		charsCurrent = charsStart - convoValue.length
-		var spanChars = $("#convoCharsLeft")
-		spanChars.text(charsCurrent)
-
-		if (charsCurrent > 0){
-			// remove classes
-			spanChars.removeClass("grey-color")
-			spanChars.removeClass("red-color")
-		} else if (charsCurrent == 0){
-			// add gray class
-			spanChars.removeClass("grey-color")
-			spanChars.addClass("grey-color")
-		} else if (charsCurrent < 0){
-			// add red class
-			spanChars.removeClass("grey-color")
-			spanChars.addClass("red-color")
-		}
-	})
-
-
-	$("#convo-form").submit(function(event){
-	   	event.preventDefault()
-	   	var this_ = $(this)
-		var formData = this_.serialize()
-		if (charsCurrent >= 0) {
-
-		$.ajax({
-			url: "/api/convo/create/",
-			data: formData,
-			method: "POST",
-			success: function(data){
-				this_.find("input[type=text], textarea").val("")
-				attachConvo(data, true)
-				updateHashLinks()
-				
-			},
-			error: function(data){
-				console.log("error")
-				console.log(data.statusText)
-				console.log(data.status)
-			}
-		})
-		} else {
-			console.log("Cannot send, too much info...")
-			$("#convo-container").text("Cannot send, too much info...")
-		}
-	})
-
+	loadConvoContainer("convo-container")
 });
-
 </script>
 
 {% endblock script %}
@@ -205,18 +22,22 @@ $("#loadmore").click(function(event){
 {% block content %}
 
 	<div class="row">
-		<div class="col-sm-3 col-xs-12" style="background-color:blue;">
+		<div class="col-sm-3 col-xs-12">
 		<h1>{{ request.user }}</h1>
+		<hr>
+		<br>
+		<p class="lead">Recommended Users</p>
+		{% recommended request.user %}
 		</div>
 		<div class="col-sm-9">
 		{% if not request.GET.q %}
 			<div class="">
-				{% include "convo/form.html" with form=create_form action_url=create_url btn_title='Converse' form_id='convo-form' %}
+				{% include "convo/form.html" with form=create_form action_url=create_url btn_title='Converse' form_class='convo-form' %}
 			</div>
 		<hr>
 		{% endif %}
 
-		<div id="convo-container">
+		<div id="convo-container" data-url='/api/convo/'>
 	
 		</div>
 		<a href="#" id="loadmore">Load More Convos Here</a>

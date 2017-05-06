@@ -1,5 +1,15 @@
 {% extends "base.html" %}
 
+{% block script %}
+
+<script>
+
+$(document).ready(function(){
+	loadConvoContainer("convo-container", {{ object.id }})
+});
+</script>
+
+{% endblock script %}
 
 {% block content %}
 <div class="row">
@@ -7,10 +17,9 @@
 		<h1>{{ object.user }}</h1>
 	</div>
 	<div class="col-sm-9 col-xs-12" >
-		{{ object.content }} 
-		<br>
-		<br>
-		{{ object.timestamp | timesince}}
+		<div id="convo-container">
+			
+		</div>
 	</div>
 </div>
 

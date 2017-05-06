@@ -1,11 +1,5 @@
 {% extends "base.html" %}
 
-<style>
-	#convo-container {
-		
-	}
-</style>
-
 {% block script %}
 
 <script>
@@ -27,16 +21,27 @@ $(document).ready(function(){
 
 			{% endif %}
 		</div>
-		<div class="col-sm-8 col-sm-offset-2">
-			<h1>Convos</h1>
-			<hr/>
 
-			<div id="convo-container" data-url='/api/tags/{{ obj.tag }}/'>
-		
-			</div>
-			<a href="#" id="loadmore">Load More Convos Here</a>
+		<div class="col-sm-9">
+		<h1>Convos</h1>
+		<hr/>
+
+		<div id="convo-container" data-url='/api/search/'>
+	
+		</div>
+		<a href="#" id="loadmore">Load More Convos Here</a>
 
 		</div>	
+
+		<div class="col-sm-3">
+			<h1>Users</h1>
+			<hr/>
+			{% for user in users %}
+				<a href='/{{ user.username }}/'>{{ user.username }}</a><br/>
+			{% empty %}
+			<p>No users found</p>
+			{% endfor %}
+		</div>
 	</div>
 
 {% endblock content %}

@@ -1,36 +1,48 @@
 {% extends "base.html" %}
 
+{% block script %}
+
+<script>
+$(document).ready(function(){
+	loadConvoContainer("convo-container")
+});
+</script>
+{% endblock script %}
+
 
 {% block content %}
 <div class="row">
 	<div class="col-sm-3 col-xs-12">
-		<h1>{{ object.username }}</h1>
+		<h2 class="h2-responsive">{{ object.username }}</h2>
 		<hr>
 		<p>Followers: {{ object.followed_by.all.count }}</p>
 		<p><a class="btn btn-link" href="{{ object.profile.get_follow_url }}"> {% if following %} Unfollow {% else %} Follow {% endif %}</a></p>
-	</div>
-	<div class="col-sm-9 col-xs-12">
-		<h1>Convos</h1>
-		{% for convo in object.convo_set.all %}
-
-		{{ convo }}<br>
-
-		{% endfor %}
 
 		<hr>
-		<h1>Following <small>{{ object.profile.get_following.count }}</small></h1>
+		<h2 class="h2-responsive">Following <small>{{ object.profile.get_following.count }}</small></h2>
 			{% for user in object.profile.get_following %}
 			<a href="/{{ user.username }}">{{ user.username }}</a><br>
 			{% empty %}
 			<h4>Currently not following any users</h4>
 			{% endfor %}
 		<hr>
-		<h1>Followed By</h1>
+		<h2 class="h2-responsive">Followed By</h2>
 			{% for profile in object.followed_by.all %}
 			<a href="/{{ profile.user.username }}">{{ profile.user.username }}</a><br>
 			{% empty %}
 			<h4>Currently not followed by any users</h4>
 			{% endfor %}
+
+		<hr>
+			
+	</div>
+	<div class="col-sm-9 col-xs-12">
+		<h1>Convos</h1>
+		<div id="convo-container" data-url='/api/{{ object.username }}/convo/'>
+	
+		</div>
+		<a href="#" id="loadmore">Load More Convos Here</a>
+		
 	</div>
 </div>
 

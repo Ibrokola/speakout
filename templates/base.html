@@ -26,18 +26,334 @@
       .grey-color {
         color: #ccc;
       }
+      .media-focus{
+        background-color: rgba(255, 255, 0, 0.22);
+      }
     </style>
   </head>
   <body>
   {% include "navbar.html" %}
+
     <div class="container">
+
       {% block content %}
       {% endblock content %}
-
+    
     </div>
+
+      {% include "reply-modal.html" %}
 
     <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <script>
+      function getParameterByName(name, url) {
+    if (!url) url = window.location.href;
+    name = name.replace(/[\[\]]/g, "\\$&");
+    var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
+        results = regex.exec(url);
+    if (!results) return null;
+    if (!results[2]) return '';
+    return decodeURIComponent(results[2].replace(/\+/g, " "));
+}
+
+function loadConvoContainer(convoContainerID, fetchOneId){
+  var query = getParameterByName('q')
+  var convoList = [];
+  var nextConvoUrl;
+
+  var convoContainer;
+  // console.log(convoContainerID)
+  if (convoContainerID){
+    convoContainer = $("#" + convoContainerID)
+  } else {
+    convoContainer = $("#convo-container")
+  }
+
+  var initialURL = convoContainer.attr("data-url") || "/api/convo/";
+  console.log(initialURL)
+
+    $(document.body).on("click", ".convo-like", function(e){
+      e.preventDefault()
+      var this_ = $(this)
+      var convoId = this_.attr("data-id")
+      var likedUrl = '/api/convo/' + convoId + "/like/"
+      // this_.text("Liked")    
+      $.ajax({
+        method:"GET",
+        url: likedUrl,
+        success: function(data){
+          if (data.liked){
+            this_.text("Liked")
+          } else {
+            this_.text("Unliked")
+          }
+        },
+        error: function(data){
+          console.log("error")
+          console.log(data)
+        }
+      })
+    })
+
+    $(document.body).on("click", ".convo-reply", function(e){
+
+      e.preventDefault()
+      var this_ = $(this)
+      var parentId = this_.attr("data-id")  
+      var username = this_.attr("data-user")
+      var content  = this_.parent().parent().find(".content").text()
+      $("#replyModal").modal({})
+      $("#replyModal textarea").after("<input type='hidden' value='" + parentId + "' name='parent_id' />")
+      $("#replyModal textarea").after("<input type='hidden' value='" + true + "' name='reply' />")
+      $("#replyModal textarea").val("@" + username + " ")
+      $("#replyModal #replyModalLabel").text("Reply to " + content)
+      $("#replyModal").on("shown.bs.modal", function(){
+        $('textarea').focus()
+      })
+    })
+
+  $(document.body).on("click", ".reconvBtn", function(e){
+
+    e.preventDefault()
+    console.log("clicked")
+    var url = "/api" + $(this).attr("href")
+
+    $.ajax({
+      method: "GET",
+      url: url,
+      success: function (data){
+        console.log(data)
+        // if username is in the API path... let's ignore this
+        if (initialURL == "/api/convo/"){
+          attachConvo(data, true, true)
+          updateHashLinks()
+        }
+  
+      },
+      error: function(data) {
+        console.log("error")
+        console.log(data)
+      }
+    })
+  })
+
+  function updateHashLinks(){
+    $(".content").each(function(data){
+      var hashtagRegex = /(^|\s)#([\w\d-]+)/g
+      var usernameRegex = /(^|\s)@([\w\d-]+)/g 
+      var currentHtml = $(this).html()
+      var newText;
+      newText = currentHtml.replace(hashtagRegex, "$1<a href='/tags/$2/'>#$2</a>")
+      newText = newText.replace(usernameRegex, "$1 @<a href='/$2/'>$2</a>")
+      $(this).html(newText)
+      // create hashtag
+    })
+  }
+
+  function formatConvo(convoValue){
+
+      var preContent;
+      var container;
+      var convoContent;
+      var isReply = convoValue.reply;
+      var replyId = convoValue.id
+      if (convoValue.parent) {
+        replyId = convoValue.parent.id
+      }
+
+      var openingContainerDiv = "<div class='media'>"
+      if (convoValue.id == fetchOneId) {
+        openingContainerDiv = "<div class='media media-focus'>"
+        setTimeout(function(){
+          $('.media-focus').css("background-color", '#fff')
+        }, 5000)
+      }
+
+      if (convoValue.parent && !isReply){
+        convoValue = convoValue.parent
+        preContent = "<span class='grey-color'>Reconv by " + convoValue.user.username + " on " + convoValue.date_display + "</span><br/>"
+      } else if (convoValue.parent && isReply){
+        preContent = "<span class='grey-color'>Reply to @" + convoValue.parent.user.username + "</span><br/>"
+      }
+
+      var verb = 'Like'
+      if (convoValue.did_like){
+        verb = 'Unlike'
+      }
+
+
+      convoContent = "<span class='content'>" + convoValue.content + "</span><br> by <a href='" + convoValue.user.url + "'>" + convoValue.user.username + "</a> | " + convoValue.date_display + " | " +"<a href='/convo/" + convoValue.id + "'>View</a> | " + "<a class='reconvBtn' href='/convo/" + convoValue.id + "/reconv/'>Reconv</a>" + " | <a href='#' class='convo-like' data-id='" + convoValue.id + "''>" + verb + " (" + convoValue.likes + ")</a>" + " | <a href='#' class='convo-reply' data-user='" + convoValue.user.username + "' data-id='" + replyId + "''>Reply</a>"
+
+      if (preContent){
+          container = openingContainerDiv + "<div class='media-body'>" + preContent + convoContent + "</div></div><hr/>"      
+      } else {
+          container = openingContainerDiv + "<div class='media-body'>" + convoContent + "</div></div><hr/>"
+      }
+
+        return container
+    }
+  function attachConvo(convoValue, prepend, reconv){
+      
+      convoFormattedHtml = formatConvo(convoValue)
+      
+      if (prepend==true){
+      convoContainer.prepend(
+        convoFormattedHtml
+      )
+      } else {
+      convoContainer.append(
+        convoFormattedHtml
+      )
+    }
+  }
+
+  function parseConvo(){
+    if (convoList == 0){
+      convoContainer.text("No convos currently found.")
+    } else {
+      // convo exists parse them
+    $.each(convoList, function(key, value){
+        var convoKey = key;
+        if (value.parent) {
+          attachConvo(value, false, true)
+        } else {
+          attachConvo(value)
+        }
+      })
+    }
+  }
+
+  function fetchConvo(url){
+  console.log('fetching')
+  var fetchUrl;
+  if(!url) {
+    fetchUrl = initialURL
+  } else {
+    fetchUrl = url
+  }
+  $.ajax({
+    url: "/api/convo/",
+    data: {
+      "q": query
+    },
+    method: "GET",
+    success: function(data){
+      convoList = data.results
+      if (data.next){
+        nextConvoUrl = data.next
+      } else {
+        $("#loadmore").css("display", "none")
+      }
+      parseConvo()
+      updateHashLinks()
+      
+    },
+    error: function(data){
+      console.log("error")
+      console.log(data)
+    }
+  })
+  }
+
+  function fetchSingle(fetchOneId){
+  var fetchDetailUrl = '/api/convo/' + fetchOneId + '/'
+  $.ajax({
+    url: fetchDetailUrl,
+    method: "GET",
+    success: function(data){
+      console.log(data)
+      convoList = data.results
+      // if (data.next){
+      //   nextConvoUrl = data.next
+      // } else {
+      //   $("#loadmore").css("display", "none")
+      // }
+      parseConvo()
+      updateHashLinks()
+      
+    },
+    error: function(data){
+      console.log("error")
+      console.log(data)
+    }
+  })
+  }
+
+if (fetchOneId){
+  fetchSingle(fetchOneId)
+} else {
+  fetchConvo()
+}
+
+
+
+$("#loadmore").click(function(event){
+  event.preventDefault()
+  if (nextConvoUrl){
+    fetchConvo(nextConvoUrl)
+  }
+  // load more items
+})
+
+  var charsStart = 200;
+  var charsCurrent = 0;
+
+  $(".convo-form").append("<span class='convoCharsLeft' style='margin-left: 20px;'>" + charsStart + " left</span>")
+
+  $(".convo-form textarea").keyup(function(event){
+    // console.log(event.key, event.timeStamp)
+    var convoValue = $(this).val()
+    charsCurrent = charsStart - convoValue.length
+    var spanChars = $(this).parent().parent().parent().find(".convoCharsLeft")
+    spanChars.text(charsCurrent)
+
+    if (charsCurrent > 0){
+      // remove classes
+      spanChars.removeClass("grey-color")
+      spanChars.removeClass("red-color")
+    } else if (charsCurrent == 0){
+      // add gray class
+      spanChars.removeClass("grey-color")
+      spanChars.addClass("grey-color")
+    } else if (charsCurrent < 0){
+      // add red class
+      spanChars.removeClass("grey-color")
+      spanChars.addClass("red-color")
+    }
+  })
+
+
+  $(".convo-form").submit(function(event){
+      event.preventDefault()
+      var this_ = $(this)
+    var formData = this_.serialize()
+    if (charsCurrent >= 0) {
+
+    $.ajax({
+      url: "/api/convo/create/",
+      data: formData,
+      method: "POST",
+      success: function(data){
+        this_.find("input[type=text], textarea").val("")
+        attachConvo(data, true)
+        updateHashLinks()
+        $("#replyModal").modal("hide")
+        
+      },
+      error: function(data){
+        console.log("error")
+        console.log(data.statusText)
+        console.log(data.status)
+      }
+    })
+    } else {
+      console.log("Cannot send, too much info...")
+      // $("#convo-container").text("Cannot send, too much info...")
+    }
+  })
+
+}     
+    </script>
 
     {% block script %}{% endblock script %}
     <script>
@@ -63,7 +379,7 @@
         function doneSearchTyping(){
           if (searchQuery){
             // do search
-            var url = '/convo/search/?q=' + searchQuery
+            var url = '/search/?q=' + searchQuery
             document.location.href = url;
           }
         }

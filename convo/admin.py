@@ -10,8 +10,8 @@ from .models import Convo
 class ConvoModelAdmin(admin.ModelAdmin):
 	form = ConvoModelForm	
 
-	# class Meta:
-	# 	model = Convo
+	class Meta:
+		model = Convo
 		
 
 admin.site.register(Convo, ConvoModelAdmin)
