@@ -1,4 +1,4 @@
-from django.conf.urls import url
+from django.conf.urls import url, include
 
 from django.views.generic.base import RedirectView
 from .views import (
@@ -15,4 +15,3 @@ urlpatterns = [
     # url(r'^(?P<pk>\d+)/update/$', ConvoUpdateView.as_view(), name='update'), # /convo/update/
     # url(r'^(?P<pk>\d+)/delete/$', ConvoDeleteView.as_view(), name='delete'), # /convo/1/delete/
 ]
-

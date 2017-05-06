@@ -4,6 +4,8 @@ from django.contrib import admin
 from django.conf import settings
 from django.conf.urls.static import static
 
+from accounts.views import UserRegisterView
+
 from hashtags.api.views import TagConvoAPIView
 from hashtags.views import HashTagView
 from convo.api.views import SearchConvoAPIView
@@ -21,6 +23,9 @@ urlpatterns = [
     url(r'^api/search/$', SearchConvoAPIView.as_view(), name='search-api'),
     url(r'^api/convo/', include('convo.api.urls', namespace='convo-api')),
     url(r'^api/', include('accounts.api.urls', namespace='profiles-api')),
+    
+    url(r'^register/$', UserRegisterView.as_view(), name='register'),
+    url(r'^', include('django.contrib.auth.urls')),
     url(r'^', include('accounts.urls', namespace='profiles')),
 ]
 

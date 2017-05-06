@@ -60,7 +60,7 @@ class ConvoDetailView(DetailView):
 	# 	obj = get_object_or_404(Convo, pk=pk)
 	# 	return obj
 
-class ConvoListView(ListView):
+class ConvoListView(LoginRequiredMixin, ListView):
 	# template_name = "list_view.html"
 	# queryset = Convo.objects.all()
 
